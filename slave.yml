@@ -1,0 +1,75 @@
+- hosts: DataNode
+  gather_facts: no
+  vars_prompt:
+    - name: dir
+      prompt: "Enter Directory Name "
+      private: no
+    - name: ip
+      prompt: "Enter Master Node IP "
+      private: no
+
+  tasks:
+    - name: Installing Java Software in DataNode
+      command: "rpm -ivh jdk-8u171-linux-x64.rpm"
+      register: j
+    - debug:
+        var: j.stdout  
+    
+    - name: Installing Hadoop Software in SlaveNode
+      command: "rpm -ivh hadoop-1.2.1-1.x86_64.rpm --force"
+      register: h
+      when: j.rc == 0
+    - debug:
+        var: h.stdout
+     
+ 
+    - name: Creating DataNode Directory
+      file:
+        path: "{{ dir }}"
+        state: directory
+
+
+    - name: Configure hdfs-site.xml
+      blockinfile:
+        path: /etc/hadoop/hdfs-site.xml
+        insertafter: "<configuration>"
+        block:
+           <property>
+           <name>dfs.data.dir</name>
+           <value>{{ dir }}</value>
+           </property>
+
+
+    - name: Configure core-site.xml
+      blockinfile:
+        path: /etc/hadoop/core-site.xml
+        insertafter: "<configuration>"
+        block:
+           <property>
+           <name>fs.default.name</name>
+           <value>hdfs://{{ ip }}:9001</value>
+           </property>
+
+    
+
+    - name: Starting DataNode services
+      shell: "hadoop-daemon.sh start datanode"
+      register: service
+    - debug:
+        var: service
+      
+    
+    - name: Checking DataNode Started or not
+      shell: "jps"
+      register: j
+    - debug:
+        var: j.stdout_lines
+
+    - name: Checking hadoop cluster report after connecting
+      shell: "hadoop dfsadmin -report"
+      register: r
+    - debug:
+        var: r
+   
+  
+      
