@@ -70,4 +70,4 @@
       shell: "jps"
       register: j
     - debug:
-        var: j.stdout_lines
+        var: j.stdout_lines.
